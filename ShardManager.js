@@ -152,8 +152,8 @@ class ShardingManager extends EventEmitter {
 
             let last_shard = shards.get(shards.size - 1);
             last_shard.add(topic).then(response => {
-                resolve(response);
                 shards.set(response.shard.id, response.shard);
+                resolve(response);
             }).catch(response => {
                 if (response.err == 'shard_full') this.connect(topic);
                 else reject(response);
