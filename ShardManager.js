@@ -86,7 +86,7 @@ class ShardingManager extends EventEmitter {
 
                 //If there is an error.
                 if (message.type == 'RESPONSE' && message.error != '') {
-                    this.emit('error', shard, message);
+                    this.emit('error', message, shard);
                 }
 
                 //If the response is a pong.
@@ -123,15 +123,15 @@ class ShardingManager extends EventEmitter {
                                 if (data.moderation_action == 'ban' || data.moderation_action == 'unban') {
                                     obj.reason = data.args[1] || 'undefined';
                                     obj.duration = 'permanent';
-                                    this.emit(data.moderation_action, shard, obj);
+                                    this.emit(data.moderation_action, obj, shard);
                                 } else {
                                     obj.reason = data.args[2] || 'undefined';
                                     obj.duration = data.args[1];
-                                    this.emit('timeout', shard, obj);
+                                    this.emit('timeout', obj, shard);
                                 }
 
                             }
-                        } else this.emit('message', shard, message);
+                        } else this.emit('message', message, shard);
                     }
                 }
 
