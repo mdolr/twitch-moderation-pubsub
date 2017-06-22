@@ -9,8 +9,9 @@ Inspired by [Fuechschen's twitch-realtime module](https://github.com/Fuechschen/
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
 
 ### Installing
+
 ```
-npm i twitch-moderation-pubsub
+npm i twitch-moderation-pubsub --save
 ```
 
 ### Twitch token
@@ -95,6 +96,6 @@ Refer to the [LICENSE](https://github.com/Equinoxbig/twitch-moderation-pubsub/bl
 
 ## Functions
 
-addTopic(twitchID) - Promise - adds the channel to the listed of watched channels. - Returns an object, topic: the topic you tried to add, err: the error message, shard: the shard. 
+addTopic(twitchID) - Promise - adds the channel to the listed of watched channels. - Returns an object, topic: the topic you tried to add, err: the error message, shard: the shard.
 
 getNonce() - if for whatever reasons you want a random string and you don't want to do it yourself !
