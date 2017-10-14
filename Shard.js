@@ -37,7 +37,7 @@ class Shard extends EventEmitter {
         });
     }
 
-    //Replace each topic with the correct pubsub topic : chat_moderator_actions.moderator_id.channel_id.
+    // Replace each topic with the correct pubsub topic : chat_moderator_actions.moderator_id.channel_id.
     validateTopics() {
         let promise = new Promise(resolve => {
             for (let i = 0; i <= this.options.topics.length; i++) {
@@ -47,12 +47,8 @@ class Shard extends EventEmitter {
         return promise;
     }
 
-    //Called by the ShardManager to add topics.
+    // Called by the ShardManager to add topics.
     add(topic) {
-
-        /**
-         * @param {String} topic A twitch channel id to listen events on.
-         */
 
         let promise = new Promise((resolve, reject) => {
 
@@ -76,11 +72,11 @@ class Shard extends EventEmitter {
                     this.fetchMessage = true;
 
 
-                    //Wait 1.5 second before resolving the function to get the response
+                    // Wait 1.5 second before resolving the function to get the response
                     setTimeout(() => {
                         if (this.lastMessage.error != null) {
 
-                            //If error return the error
+                            // If error return the error
                             if (this.lastMessage.error != '') {
                                 reject({
                                     topic,
@@ -89,7 +85,7 @@ class Shard extends EventEmitter {
                                 });
                             }
 
-                            //Else topic has been added.
+                            // Else topic has been added.
                             else {
                                 this.options.topics.push(`chat_moderator_actions.${this.options.mod_id}.${topic}`);
                                 this.options.full = (this.options.topics.length >= 50);
@@ -101,7 +97,7 @@ class Shard extends EventEmitter {
                             }
                         }
 
-                        //If lastMessage is still null after 1 second
+                        // If lastMessage is still null after 1 second
                         else {
                             reject({
                                 topic,
@@ -116,7 +112,7 @@ class Shard extends EventEmitter {
                     }, 1.5 * 1000);
                 }
 
-                //More than 50 topics on shard.
+                // More than 50 topics on shard.
             } else reject({
                 topic,
                 err: 'shard_full',
@@ -158,7 +154,7 @@ class Shard extends EventEmitter {
             }, 5000);
         });
 
-        //Heartbeat keepAlive interval.
+        // Heartbeat keepAlive interval.
         setInterval(() => {
             this.ws.send(JSON.stringify({
                 type: 'PING'

@@ -23,12 +23,8 @@ class ShardingManager extends EventEmitter {
         this.spawn();
     }
 
-    //A random nonce is needed to connect the shard.
+    // A random nonce is needed to connect the shard.
     getNonce() {
-
-        /**
-         * @return {String} nonce returns a string of random characters.
-         */
 
         let nonce = '';
         let possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -39,7 +35,7 @@ class ShardingManager extends EventEmitter {
         return nonce;
     }
 
-    //For each 50 topics spawns a new shard.
+    // For each 50 topics spawns a new shard.
     spawn() {
         let spawning = setInterval(() => {
             let topics = this.options.topics.slice(0, 50);
@@ -54,7 +50,7 @@ class ShardingManager extends EventEmitter {
         }, 2.5 * 1000);
     }
 
-    //Connects a shard
+    // Connects a shard
     connect(topics) {
         let nonce = this.getNonce(),
             id = shards.size,
@@ -84,17 +80,17 @@ class ShardingManager extends EventEmitter {
             try {
                 message = JSON.parse(message);
 
-                //If there is an error.
+                // If there is an error.
                 if (message.type == 'RESPONSE' && message.error != '') {
                     this.emit('error', message, shard);
                 }
 
-                //If the response is a pong.
+                // If the response is a pong.
                 else if (message.type == 'PONG') {
                     this.emit('pong', shard);
                 }
 
-                //If the response is a mod action.
+                // If the response is a mod action.
                 else {
 
                     if (message.data != null) {
@@ -121,14 +117,45 @@ class ShardingManager extends EventEmitter {
                                 };
 
                                 if (data.moderation_action == 'ban' || data.moderation_action == 'unban') {
-                                    obj.reason = data.args[1] || 'undefined';
+                                    obj.reason = data.args[1] || null;
                                     obj.duration = 'permanent';
                                     this.emit(data.moderation_action, obj, shard);
                                 } else {
-                                    obj.reason = data.args[2] || 'undefined';
-                                    obj.duration = data.args[1];
+                                    obj.reason = data.args[2] || null;
+                                    obj.duration = parseInt(data.args[1], 10);
                                     this.emit('timeout', obj, shard);
                                 }
+
+                            } else if (['subscribers', 'subscribersoff', 'r9kbeta', 'r9kbetaoff', 'clear', 'emoteonly', 'emoteonlyoff', 'followersoff', 'followers', 'slow', 'slowoff'].includes(data.moderation_action.toLowerCase())) {
+                                let obj = {
+                                    channel_id: message.data.topic.split('.')[2],
+                                    type: data.moderation_action,
+                                    moderator: {
+                                        id: data.created_by_user_id,
+                                        name: data.created_by
+                                    },
+                                    duration: data.args ? data.args[0] ? parseInt(data.args[0], 10) : null : null,
+                                    created_at: new Date().getTime()
+                                };
+
+                                this.emit(data.moderation_action.replace('beta', ''), obj, shard);
+
+                            } else if (['mod', 'unmod'].includes(data.moderation_action.toLowerCase())) {
+                                let obj = {
+                                    channel_id: message.data.topic.split('.')[2],
+                                    type: data.moderation_action,
+                                    moderator: {
+                                        id: data.created_by_user_id,
+                                        name: data.created_by
+                                    },
+                                    target: {
+                                        id: data.target_user_id,
+                                        name: data.args[0]
+                                    },
+                                    created_at: new Date().getTime()
+                                };
+
+                                this.emit(data.moderation_action, obj, shard);
 
                             }
                         } else this.emit('message', message, shard);
@@ -141,12 +168,8 @@ class ShardingManager extends EventEmitter {
         });
     }
 
-    //Method used to add a topic to the last shard.
+    // Method used to add a topic to the last shard.
     addTopic(topic) {
-
-        /**
-         * @param {String} topic A twitch channel ID to listen.
-         */
 
         let promise = new Promise((resolve, reject) => {
 
