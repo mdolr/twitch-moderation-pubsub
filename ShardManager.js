@@ -172,16 +172,22 @@ class ShardingManager extends EventEmitter {
     addTopic(topic) {
 
         let promise = new Promise((resolve, reject) => {
+            let already = this.options.topics.filter((elm) => { return elm.includes(topic); });
+            if (already.length > 0) {
+                resolve({ topic, err: 'success', shard: null });
+            } else {
+                let last_shard = shards.get(shards.size - 1);
+                last_shard.add(topic).then(response => {
+                    shards.set(response.shard.options.id, response.shard);
 
-            let last_shard = shards.get(shards.size - 1);
-            last_shard.add(topic).then(response => {
-                shards.set(response.shard.id, response.shard);
-                resolve(response);
-            }).catch(response => {
-                if (response.err == 'shard_full') this.connect(topic);
-                else reject(response);
-            });
+                    this.options.topics.push(topic);
+                    resolve(response);
+                }).catch(response => {
+                    if (response.err == 'shard_full') this.connect(topic);
+                    else reject(response);
+                });
 
+            }
         });
 
         return promise;
