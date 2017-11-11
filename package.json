@@ -1,6 +1,6 @@
 {
     "name": "twitch-moderation-pubsub",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "description": "A simple nodejs module that let you connect to twitch moderation pubsub",
     "main": "ShardManager.js",
     "scripts": {
