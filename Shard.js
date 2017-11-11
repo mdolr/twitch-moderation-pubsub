@@ -20,6 +20,7 @@ class Shard extends EventEmitter {
      * @param {String}          options.token   Token to use while connecting to the pubsub system
      * @param {Array}           options.topics  Topics to listen when connecting to the pubsub system
      * @param {Boolean}         options.full    Whether the shard has 50 topics or less
+     * @param {Number}          options.limit   Limit of topics per shard
      */
 
     constructor(manager, options) {
@@ -52,7 +53,7 @@ class Shard extends EventEmitter {
 
         let promise = new Promise((resolve, reject) => {
 
-            if (this.options.topics.length < 50) {
+            if (this.options.topics.length < this.options.limit) {
                 if (this.options.topics.includes(`chat_moderator_actions.${this.options.mod_id}.${topic}`)) {
                     resolve({
                         topic,
@@ -88,7 +89,7 @@ class Shard extends EventEmitter {
                             // Else topic has been added.
                             else {
                                 this.options.topics.push(`chat_moderator_actions.${this.options.mod_id}.${topic}`);
-                                this.options.full = (this.options.topics.length >= 50);
+                                this.options.full = (this.options.topics.length >= this.options.limit);
                                 resolve({
                                     topic,
                                     err: 'success',

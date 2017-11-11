@@ -3,8 +3,6 @@
 const Shard = require('./Shard.js');
 const EventEmitter = require('events');
 
-let shards = new Map();
-
 class ShardingManager extends EventEmitter {
 
     /**
@@ -12,6 +10,7 @@ class ShardingManager extends EventEmitter {
      * @param {String} options.token   Token to use while connecting to the pubsub system
      * @param {String} options.mod_id  The id of the user used by the pubsub system
      * @param {Array}  options.topics  Topics to listen when connecting to the pubsub system
+     * @param {Number} options.limit   Limit of topics per shard
      */
 
     constructor(options) {
@@ -19,7 +18,9 @@ class ShardingManager extends EventEmitter {
 
         this.started = false;
         this.options = options;
-        this.lastShard = -1;
+        this.options.limit = options.limit || 30;
+        this.shards = new Map();
+        this.temporaryTopics = this.options.topics;
         this.spawn();
     }
 
@@ -35,16 +36,18 @@ class ShardingManager extends EventEmitter {
         return nonce;
     }
 
-    // For each 50 topics spawns a new shard.
+    // For each [LIMIT] topics spawns a new shard.
     spawn() {
         let spawning = setInterval(() => {
-            let topics = this.options.topics.slice(0, 50);
+            let topics = this.temporaryTopics.slice(0, this.options.limit);
             this.connect(topics);
-            this.lastShard++;
-            if (this.options.topics.length <= 50) {
+
+            if (this.temporaryTopics.length <= this.options.limit) {
                 clearInterval(spawning);
             } else {
-                this.options.topics = this.options.topics.slice(50, this.options.topics.length);
+                console.log(this.temporaryTopics.length)
+                this.temporaryTopics = this.temporaryTopics.slice(this.options.limit);
+                console.log(this.temporaryTopics.length)
             }
 
         }, 2.5 * 1000);
@@ -53,18 +56,19 @@ class ShardingManager extends EventEmitter {
     // Connects a shard
     connect(topics) {
         let nonce = this.getNonce(),
-            id = shards.size,
+            id = this.shards.size,
             options = {
                 id,
                 topics,
                 mod_id: this.options.mod_id,
                 token: this.options.token,
                 nonce: nonce,
-                full: topics.length >= 50
+                full: topics.length >= this.options.limit,
+                limit: this.options.limit
             },
 
             shard = new Shard(this, options);
-        shards.set(id, shard);
+        this.shards.set(id, shard);
 
         shard.on('ready', shard => {
             if (!shard.full && !this.started) {
@@ -173,19 +177,24 @@ class ShardingManager extends EventEmitter {
 
         let promise = new Promise((resolve, reject) => {
             let already = this.options.topics.filter((elm) => { return elm.includes(topic); });
+
             if (already.length > 0) {
                 resolve({ topic, err: 'success', shard: null });
-            } else {
-                let last_shard = shards.get(shards.size - 1);
-                last_shard.add(topic).then(response => {
-                    shards.set(response.shard.options.id, response.shard);
 
-                    this.options.topics.push(topic);
-                    resolve(response);
-                }).catch(response => {
-                    if (response.err == 'shard_full') this.connect(topic);
-                    else reject(response);
-                });
+            } else {
+                let last_shard = this.shards.get(this.shards.size - 1);
+
+                last_shard
+                    .add(topic)
+                    .then(response => {
+                        this.shards.set(response.shard.options.id, response.shard);
+                        this.options.topics.push(topic);
+                        resolve(response);
+                    })
+                    .catch(response => {
+                        if (response.err == 'shard_full') this.connect(topic);
+                        else reject(response);
+                    });
 
             }
         });
