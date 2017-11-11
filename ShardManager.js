@@ -45,9 +45,7 @@ class ShardingManager extends EventEmitter {
             if (this.temporaryTopics.length <= this.options.limit) {
                 clearInterval(spawning);
             } else {
-                console.log(this.temporaryTopics.length)
                 this.temporaryTopics = this.temporaryTopics.slice(this.options.limit);
-                console.log(this.temporaryTopics.length)
             }
 
         }, 2.5 * 1000);
