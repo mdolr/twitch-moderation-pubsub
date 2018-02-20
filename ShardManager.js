@@ -124,7 +124,7 @@ class ShardingManager extends EventEmitter {
                                     this.emit(data.moderation_action, obj, shard);
                                 } else {
                                     obj.reason = data.args[2] || null;
-                                    obj.duration = parseInt(data.args[1], 10);
+                                    obj.duration = data.args[1] ? parseInt(data.args[1], 10) : 0 /*Means unknown, see issue on github <https://github.com/Equinoxbig/twitch-moderation-pubsub/issues/2>, implementing as 0 to avoid disturbing expected behaviour*/ ;
                                     this.emit('timeout', obj, shard);
                                 }
 
