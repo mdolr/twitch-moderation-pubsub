@@ -101,7 +101,7 @@ class ShardingManager extends EventEmitter {
                             let m = JSON.parse(message.data.message),
                                 data = m.data;
 
-                            if (['timeout', 'unban', 'ban'].includes(data.moderation_action.toLowerCase())) {
+                            if (['timeout', 'untimeout', 'unban', 'ban'].includes(data.moderation_action.toLowerCase())) {
                                 let obj = {
                                     channel_id: message.data.topic.split('.')[2],
                                     type: data.moderation_action,
@@ -125,7 +125,7 @@ class ShardingManager extends EventEmitter {
                                 } else {
                                     obj.reason = data.args[2] || null;
                                     obj.duration = data.args[1] ? parseInt(data.args[1], 10) : 0 /*Means unknown, see issue on github <https://github.com/Equinoxbig/twitch-moderation-pubsub/issues/2>, implementing as 0 to avoid disturbing expected behaviour*/ ;
-                                    this.emit('timeout', obj, shard);
+                                    this.emit(data.moderation_action, obj, shard);
                                 }
 
                             } else if (['subscribers', 'subscribersoff', 'r9kbeta', 'r9kbetaoff', 'clear', 'emoteonly', 'emoteonlyoff', 'followersoff', 'followers', 'slow', 'slowoff'].includes(data.moderation_action.toLowerCase())) {
