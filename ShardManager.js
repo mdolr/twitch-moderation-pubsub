@@ -101,64 +101,88 @@ class ShardingManager extends EventEmitter {
                             let m = JSON.parse(message.data.message),
                                 data = m.data;
 
-                            if (['timeout', 'untimeout', 'unban', 'ban'].includes(data.moderation_action.toLowerCase())) {
-                                let obj = {
-                                    channel_id: message.data.topic.split('.')[2],
-                                    type: data.moderation_action,
-                                    moderator: {
-                                        id: data.created_by_user_id,
-                                        name: data.created_by
-                                    },
-                                    target: {
-                                        id: data.target_user_id,
-                                        name: data.args[0]
-                                    },
-                                    reason: '',
-                                    duration: '',
-                                    created_at: new Date().getTime()
-                                };
+                            if (data.type === 'chat_login_moderation') {
+                                if (['timeout', 'untimeout', 'unban', 'ban'].includes(data.moderation_action.toLowerCase())) {
+                                    let obj = {
+                                        channel_id: message.data.topic.split('.')[2],
+                                        type: data.moderation_action,
+                                        moderator: {
+                                            id: data.created_by_user_id,
+                                            name: data.created_by
+                                        },
+                                        target: {
+                                            id: data.target_user_id,
+                                            name: data.args[0]
+                                        },
+                                        reason: '',
+                                        duration: '',
+                                        created_at: new Date().getTime()
+                                    };
 
-                                if (data.moderation_action == 'ban' || data.moderation_action == 'unban') {
-                                    obj.reason = data.args[1] || null;
-                                    obj.duration = 'permanent';
-                                    this.emit(data.moderation_action, obj, shard);
-                                } else {
-                                    obj.reason = data.args[2] || null;
-                                    obj.duration = data.args[1] ? parseInt(data.args[1], 10) : 0 /*Means unknown, see issue on github <https://github.com/Equinoxbig/twitch-moderation-pubsub/issues/2>, implementing as 0 to avoid disturbing expected behaviour*/ ;
-                                    this.emit(data.moderation_action, obj, shard);
+                                    if (data.moderation_action == 'ban' || data.moderation_action == 'unban') {
+                                        obj.reason = data.args[1] || null;
+                                        obj.duration = 'permanent';
+                                        this.emit(data.moderation_action, obj, shard);
+                                    } else {
+                                        obj.reason = data.args[2] || null;
+                                        obj.duration = data.args[1] ? parseInt(data.args[1], 10) : 0 /*Means unknown, see issue on github <https://github.com/Equinoxbig/twitch-moderation-pubsub/issues/2>, implementing as 0 to avoid disturbing expected behaviour*/ ;
+                                        this.emit(data.moderation_action, obj, shard);
+                                    }
+
+                                } else if (['delete'].includes(data.moderation_action.toLowerCase())) {
+                                    let obj = {
+                                        channel_id: message.data.topic.split('.')[2],
+                                        type: data.moderation_action,
+                                        moderator: {
+                                            id: data.created_by_user_id,
+                                            name: data.created_by
+                                        },
+                                        target: {
+                                            id: data.target_user_id,
+                                            name: data.args[0]
+                                        },
+                                        message: {
+                                            content: data.args[1],
+                                            id: data.args[2]
+                                        },
+                                        created_at: new Date().getTime()
+                                    };
+
+                                    this.emit(data.moderation_action.replace('beta', ''), obj, shard);
                                 }
 
-                            } else if (['subscribers', 'subscribersoff', 'r9kbeta', 'r9kbetaoff', 'clear', 'emoteonly', 'emoteonlyoff', 'followersoff', 'followers', 'slow', 'slowoff'].includes(data.moderation_action.toLowerCase())) {
-                                let obj = {
-                                    channel_id: message.data.topic.split('.')[2],
-                                    type: data.moderation_action,
-                                    moderator: {
-                                        id: data.created_by_user_id,
-                                        name: data.created_by
-                                    },
-                                    duration: data.args ? data.args[0] ? parseInt(data.args[0], 10) : null : null,
-                                    created_at: new Date().getTime()
-                                };
+                            } else if (data.type === 'chat_channel_moderation') {
+                                if (['subscribers', 'subscribersoff', 'r9kbeta', 'r9kbetaoff', 'clear', 'emoteonly', 'emoteonlyoff', 'followersoff', 'followers', 'slow', 'slowoff'].includes(data.moderation_action.toLowerCase())) {
+                                    let obj = {
+                                        channel_id: message.data.topic.split('.')[2],
+                                        type: data.moderation_action,
+                                        moderator: {
+                                            id: data.created_by_user_id,
+                                            name: data.created_by
+                                        },
+                                        duration: data.args ? data.args[0] ? parseInt(data.args[0], 10) : null : null,
+                                        created_at: new Date().getTime()
+                                    };
 
-                                this.emit(data.moderation_action.replace('beta', ''), obj, shard);
+                                    this.emit(data.moderation_action.replace('beta', ''), obj, shard);
 
-                            } else if (['mod', 'unmod'].includes(data.moderation_action.toLowerCase())) {
-                                let obj = {
-                                    channel_id: message.data.topic.split('.')[2],
-                                    type: data.moderation_action,
-                                    moderator: {
-                                        id: data.created_by_user_id,
-                                        name: data.created_by
-                                    },
-                                    target: {
-                                        id: data.target_user_id,
-                                        name: data.args[0]
-                                    },
-                                    created_at: new Date().getTime()
-                                };
+                                }
+                            } else {
+                                if (['moderator_removed', 'moderator_added'].includes(m.type.toLowerCase())) {
+                                    let obj = {
+                                        channel_id: message.data.topic.split('.')[2],
+                                        type: m.type === 'moderator_removed' ? 'unmod' : 'mod',
+                                        moderator: {
+                                            id: data.channel_id
+                                        },
+                                        target: {
+                                            id: data.target_user_id
+                                        },
+                                        created_at: new Date().getTime()
+                                    };
 
-                                this.emit(data.moderation_action, obj, shard);
-
+                                    this.emit(obj.type, obj, shard);
+                                }
                             }
                         } else this.emit('message', message, shard);
                     }
